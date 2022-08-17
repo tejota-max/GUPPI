@@ -87,13 +87,24 @@ const respondToTriggers = (foundTriggers) => {
   const respondedText = fs.readFileSync('responded.json', 'utf8').trim();
   const responses = respondedText ? JSON.parse(respondedText) : {};
 
+  let sendCheckCounter = 0;
+
   // condense by checking against responded
   foundTriggers.forEach(async trigger => {
+    sendCheckCounter += 1;
+
     const parentEntry = trigger.parentId in responses;
 
     if (!parentEntry || (parentEntry && responses[trigger.parentId].indexOf(trigger.commentId) === -1)) {
       console.log(`replying..., ${Date.now()}`);
       await replyToCommentWithDelay(trigger.parentId, trigger.commentId, 'default msg');
+    }
+
+    if (sendCheckCounter === foundTriggers.length) {
+      // last run
+      setTimeout(() => {
+        getNewComments();
+      }, 5000);
     }
   });
 }
@@ -121,6 +132,7 @@ const getNewComments = () => {
     // process found triggers
     if (foundTriggers.length > 0) {
       respondToTriggers(foundTriggers);
+      console.log(`checked on ${Date.now()} found triggers`);
     } else {
       console.log(`checked on ${Date.now()} no triggers`);
       setTimeout(() => {
