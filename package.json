@@ -1,0 +1,23 @@
+{
+  "name": "guppi",
+  "version": "1.0.0",
+  "description": "reddit bot for bobiverse subreddit",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tejota-max/GUPPI.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tejota-max/GUPPI/issues"
+  },
+  "homepage": "https://github.com/tejota-max/GUPPI#readme",
+  "dependencies": {
+    "dotenv": "^16.0.1",
+    "snoowrap": "^1.23.0"
+  }
+}
