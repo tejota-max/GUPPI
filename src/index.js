@@ -71,6 +71,8 @@ const addRespondedEntry = (parentId, commentId) => {
       currentEntries[parentId] = [commentId];
     }
 
+    // TODO: this will fail if the responded.json file doesn't exist
+    // this was using append, will update
     fs.writeFileSync('responded.json', JSON.stringify(currentEntries));
   } catch (e) {
     console.log('failed to write to responded.json');
