@@ -15,15 +15,20 @@ const requestor = new snoowrap({
 
 const guppi_version = 1;
 const guppi_greetings = [
-  "custom greeting" // lol
+  "I live to serve",
+  "By your command",
+  "Affirmative!",
+  "(eye roll)"
 ];
+
+// https://stackoverflow.com/questions/4550505/getting-a-random-value-from-a-javascript-array
+const random = () =>  Math.floor(Math.random() * guppi_greetings.length);
 
 const replyToComment = (commentId, msg) => {
   requestor.getComment(commentId)
     .reply(
       `GUPPI ver.${guppi_version}` + '\n\n' +
-      guppi_greetings[0] + '\n\n' + // random
-      msg
+      guppi_greetings[random()]
     );
 }
 
