@@ -13,12 +13,20 @@ const requestor = new snoowrap({
   password: process.env.password
 });
 
-const guppi_version = 1;
+const guppi_version = 1.0.3;
+
 const guppi_greetings = [
   "I live to serve",
   "By your command",
   "Affirmative!",
   "(eye roll)"
+];
+
+const guppi_commands = [
+  "man",
+  "help",
+  "commands",
+  "books"
 ];
 
 // https://stackoverflow.com/questions/4550505/getting-a-random-value-from-a-javascript-array
@@ -118,6 +126,82 @@ const respondToTriggers = (foundTriggers) => {
 
 const scriptEnabled = fs.readFileSync('onOff.txt', 'utf8').trim();
 
+const guppi_responses = {
+  "commands": "help, man, commands -- show available commands \n\n
+136     books -- recommended books",
+  "books": "Project Hail Mary \n
+  Star Carrier series \n
+  Expeditionary Force \n
+  Red Rising \n
+  Outlander \n
+  Martian \n
+  Artemis \n
+  Three Body Problem \n
+  Wayward Galaxy \n
+  Mistborn series \n
+  Old Man's War series \n
+  Fuzzy Nation \n
+  The Expanse \n
+  Children of Time \n
+  The Foundation series \n
+  Roadkill \n
+  Pushing Ice \n
+  Infinite \n
+  Dungeon Crawler Carl \n
+  Murderbot Diaries \n
+  Empress Forever \n
+  Seveneves \n
+  The Forever series \n
+  To Sleep in a Sea of Stars \n
+  Undying Mercenaries \n
+  NPC \n
+  The Dark \n
+  Earthcore \n
+  Interstellar Gunrunner \n
+  OtherWorld \n
+  Chrysalis \n
+  Dimension Space series \n
+  Hitchhikers Guide radio series \n
+  Closed but Common Orbit \n
+  Long Way to a Small, Angry Planet \n
+  A World Out Of Time \n
+  The Quarter Share series \n
+  Man of War \n
+  Empire Corps \n
+  Omega Force \n
+  The Frontiers Saga \n
+  Black Fleet Trilogy \n
+  Thrawn Trilogy \n
+  The Laundry Files series \n
+  Wool \n
+  Galaxy's Edge \n
+  Legacy Fleet"
+}
+
+const respMatch = (command) => {
+  switch (command) {
+  case "man":
+  case "help":
+  case "commands":
+    return guppi_responses.commands;
+  case "books":
+    return guppi_responses.books;
+  default:
+    return guppi_rsponses.commands;
+}
+
+const findResp = (body) => {
+  // oof double loop
+  for (let i = 0; i < guppi_commands.length; i++) {
+   const command = guppi_commands[i];
+    if (body.indexOf(command) !== -1) {
+      return respMatch(command);
+    } else {
+      return guppi_responses.commands;
+    }
+  };
+}
+
 const getNewComments = () => {
   if (scriptEnabled === "off") {
     console.log('script disabled');
@@ -126,12 +210,14 @@ const getNewComments = () => {
 
   requestor.getSubreddit(subreddit).getNewComments().then(res => {
     const foundTriggers = [];
+    const resBody = res.body.replace(/\\/g, '');
 
     res.forEach(res => {
-      if (res.created > todayEpoch && res.body.replace(/\\/g, '').indexOf(guppi_trigger) !== -1) {
+      if (res.created > todayEpoch && resBody(/\\/g, '').indexOf(guppi_trigger) !== -1) {
         foundTriggers.push({
 	  parentId: res.parent_id,
-          commentId: res.id
+          commentId: res.id,
+          msg: findResp(resBody)
         });
       }
     });
