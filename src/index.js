@@ -13,7 +13,7 @@ const requestor = new snoowrap({
   password: process.env.password
 });
 
-const guppi_version = 1.0.3;
+const guppi_version = '1.0.3';
 
 const guppi_greetings = [
   "I live to serve",
@@ -23,9 +23,9 @@ const guppi_greetings = [
 ];
 
 const guppi_commands = [
+  "commands", // descending length order for inclusive substr check
   "man",
   "help",
-  "commands",
   "books"
 ];
 
@@ -35,18 +35,9 @@ const random = () =>  Math.floor(Math.random() * guppi_greetings.length);
 const replyToComment = (commentId, msg) => {
   requestor.getComment(commentId)
     .reply(
-      `GUPPI ver.${guppi_version}` + '\n\n' +
-      guppi_greetings[random()]
+      `ver.${guppi_version}` + ' | ' + guppi_greetings[random()] + '\n\n' +
+      msg
     );
-}
-
-const replyToThread = (threadId, msg) => {
-  try {
-    requestor.getSubmission(threadId)
-      .reply(msg);
-  } catch (e) {
-    console.log(`failed to reply ${threadId}`);
-  }
 }
 
 const soDate = () => new Date().toLocaleString('en-US', {
@@ -55,18 +46,6 @@ const soDate = () => new Date().toLocaleString('en-US', {
 
 // limit any checks against the start of today to reduce computation/API calls
 const todayEpoch = Math.floor((new Date(soDate()).valueOf())/1000);
-
-const checkIfResponded = (commentIds) => {
-  fs.readFileSync('responded.json', 'utf8', (err, data) => {
-    if (err) {
-      console.log('error');
-    }
-
-    const respondedThreadComments = JSON.parse(data);
-
-    return commentIds.map(commentId => respondedThreadComments.indexOf(commentId) > -1);
-  });
-}
 
 const addRespondedEntry = (parentId, commentId) => {
   try {
@@ -112,7 +91,7 @@ const respondToTriggers = (foundTriggers) => {
 
     if (!parentEntry || (parentEntry && responses[trigger.parentId].indexOf(trigger.commentId) === -1)) {
       console.log(`replying..., ${Date.now()}`);
-      await replyToCommentWithDelay(trigger.parentId, trigger.commentId, 'default msg');
+      await replyToCommentWithDelay(trigger.parentId, trigger.commentId, trigger.msg);
     }
 
     if (sendCheckCounter === foundTriggers.length) {
@@ -126,80 +105,47 @@ const respondToTriggers = (foundTriggers) => {
 
 const scriptEnabled = fs.readFileSync('onOff.txt', 'utf8').trim();
 
+const getBooks = () => {
+  const books = fs.readFileSync('./books.txt', {encoding: 'utf8', flag: 'r'});
+  return books ? books.split('\n').join(' ___ ') : 'book list get err';
+}
+
 const guppi_responses = {
-  "commands": "help, man, commands -- show available commands \n\n
-136     books -- recommended books",
-  "books": "Project Hail Mary \n
-  Star Carrier series \n
-  Expeditionary Force \n
-  Red Rising \n
-  Outlander \n
-  Martian \n
-  Artemis \n
-  Three Body Problem \n
-  Wayward Galaxy \n
-  Mistborn series \n
-  Old Man's War series \n
-  Fuzzy Nation \n
-  The Expanse \n
-  Children of Time \n
-  The Foundation series \n
-  Roadkill \n
-  Pushing Ice \n
-  Infinite \n
-  Dungeon Crawler Carl \n
-  Murderbot Diaries \n
-  Empress Forever \n
-  Seveneves \n
-  The Forever series \n
-  To Sleep in a Sea of Stars \n
-  Undying Mercenaries \n
-  NPC \n
-  The Dark \n
-  Earthcore \n
-  Interstellar Gunrunner \n
-  OtherWorld \n
-  Chrysalis \n
-  Dimension Space series \n
-  Hitchhikers Guide radio series \n
-  Closed but Common Orbit \n
-  Long Way to a Small, Angry Planet \n
-  A World Out Of Time \n
-  The Quarter Share series \n
-  Man of War \n
-  Empire Corps \n
-  Omega Force \n
-  The Frontiers Saga \n
-  Black Fleet Trilogy \n
-  Thrawn Trilogy \n
-  The Laundry Files series \n
-  Wool \n
-  Galaxy's Edge \n
-  Legacy Fleet"
+  "commands": `help, man, commands -- show available commands \n\n
+  books -- recommended books`,
+  "books": getBooks()
 }
 
 const respMatch = (command) => {
+  let resp = "";
+
   switch (command) {
-  case "man":
-  case "help":
-  case "commands":
-    return guppi_responses.commands;
-  case "books":
-    return guppi_responses.books;
-  default:
-    return guppi_rsponses.commands;
+    case "man":
+    case "help":
+    case "commands":
+      resp = guppi_responses.commands;
+      break;
+    case "books":
+      resp = guppi_responses.books;
+      break;
+    default:
+      resp = guppi_responses.commands;
+  }
+
+  return resp;
 }
 
 const findResp = (body) => {
   // oof double loop
   for (let i = 0; i < guppi_commands.length; i++) {
-   const command = guppi_commands[i];
+    const command = guppi_commands[i];
+
     if (body.indexOf(command) !== -1) {
       return respMatch(command);
-    } else {
-      return guppi_responses.commands;
     }
   };
+
+  return guppi_responses.commands;
 }
 
 const getNewComments = () => {
@@ -210,12 +156,12 @@ const getNewComments = () => {
 
   requestor.getSubreddit(subreddit).getNewComments().then(res => {
     const foundTriggers = [];
-    const resBody = res.body.replace(/\\/g, '');
 
     res.forEach(res => {
-      if (res.created > todayEpoch && resBody(/\\/g, '').indexOf(guppi_trigger) !== -1) {
+      const resBody = res.body.replace(/\\/g, '');
+      if (res.created > todayEpoch && resBody.indexOf(guppi_trigger) !== -1) {
         foundTriggers.push({
-	  parentId: res.parent_id,
+	        parentId: res.parent_id,
           commentId: res.id,
           msg: findResp(resBody)
         });
