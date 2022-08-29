@@ -5,6 +5,8 @@ const guppi_trigger = process.env.trigger;
 const snoowrap = require('snoowrap');
 const fs = require('fs');
 
+let requestCounter = 0;
+
 const requestor = new snoowrap({
   userAgent: process.env.userAgent,
   clientId: process.env.clientId,
@@ -168,12 +170,14 @@ const getNewComments = () => {
       }
     });
 
+    requestCounter += 1;
+
     // process found triggers
     if (foundTriggers.length > 0) {
       respondToTriggers(foundTriggers);
-      console.log(`checked on ${Date.now()} found triggers`);
+      console.log(`${requestCounter} checked on ${Date.now()} found triggers`);
     } else {
-      console.log(`checked on ${Date.now()} no triggers`);
+      console.log(`${requestCounter} checked on ${Date.now()} no triggers`);
       setTimeout(() => {
         getNewComments();
       }, 5000); // 5 second delay between runs
